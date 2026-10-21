@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Цикл</title>
+  <meta name="description" content="Дневник менструального цикла с научными подсказками. Данные хранятся только на этом устройстве.">
+  <meta name="theme-color" content="#c2410c">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Цикл">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1 id="appTitle">Цикл</h1>
+    <span class="muted small" id="todayLabel"></span>
+  </header>
+
+  <main>
+    <!-- Сегодня -->
+    <section id="view-today" class="view active" aria-label="Сегодня">
+      <div class="card hero" id="hero"></div>
+      <div id="warningsToday"></div>
+      <div class="actions" id="quickActions"></div>
+      <div class="card" id="todayLog"></div>
+      <div class="card tip" id="tipOfDay"></div>
+    </section>
+
+    <!-- Календарь -->
+    <section id="view-calendar" class="view" aria-label="Календарь">
+      <div class="card">
+        <div class="cal-head">
+          <button class="icon-btn" id="prevMonth" aria-label="Предыдущий месяц">‹</button>
+          <h2 id="monthTitle"></h2>
+          <button class="icon-btn" id="nextMonth" aria-label="Следующий месяц">›</button>
+        </div>
+        <div class="cal-grid weekdays">
+          <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="legend">
+          <span><i class="sw period"></i>Месячные</span>
+          <span><i class="sw predicted"></i>Прогноз</span>
+          <span><i class="sw fertile"></i>Фертильное окно</span>
+          <span><i class="sw ovulation"></i>Овуляция (оценка)</span>
+          <span><i class="sw dot"></i>Есть отметки</span>
+        </div>
+      </div>
+      <p class="muted small pad">Нажмите на день, чтобы отметить начало/конец месячных или симптомы.</p>
+    </section>
+
+    <!-- Статистика и записи -->
+    <section id="view-stats" class="view" aria-label="Статистика">
+      <div class="card" id="statsCard"></div>
+      <div id="warningsStats"></div>
+      <div class="card" id="symptomStats"></div>
+      <div class="card">
+        <div class="row between">
+          <h2>Записи месячных</h2>
+          <button class="btn small" id="addPeriodBtn">+ Добавить</button>
+        </div>
+        <ul class="period-list" id="periodList"></ul>
+      </div>
+      <div class="card" id="settingsCard">
+        <h2>Настройки и данные</h2>
+        <label class="field">Имя (для заголовка)
+          <input type="text" id="setName" maxlength="30" placeholder="например, Анна">
+        </label>
+        <label class="field">Длина цикла по умолчанию (пока мало записей)
+          <input type="number" id="setCycle" min="20" max="45">
+        </label>
+        <label class="field">Длина месячных по умолчанию
+          <input type="number" id="setPeriod" min="2" max="10">
+        </label>
+        <div class="row wrap gap">
+          <button class="btn" id="exportBtn">Сохранить копию (файл)</button>
+          <label class="btn" for="importFile">Восстановить из файла</label>
+          <input type="file" id="importFile" accept="application/json" hidden>
+          <button class="btn danger" id="clearBtn">Удалить все данные</button>
+        </div>
+        <p class="muted small">Все записи хранятся только в браузере этого телефона. Делайте копию время от времени: если очистить данные браузера, записи пропадут.</p>
+      </div>
+    </section>
+
+    <!-- Советы -->
+    <section id="view-tips" class="view" aria-label="Советы">
+      <div class="card">
+        <h2>Подсказки на основе исследований</h2>
+        <p class="muted small">У каждой подсказки указан источник и тип доказательств. Это справочная информация, а не замена консультации врача.</p>
+        <div class="chips" id="tipFilter"></div>
+      </div>
+      <div id="tipList"></div>
+    </section>
+  </main>
+
+  <nav class="tabbar" aria-label="Разделы">
+    <button data-view="today" class="active"><span>◉</span>Сегодня</button>
+    <button data-view="calendar"><span>▦</span>Календарь</button>
+    <button data-view="stats"><span>≡</span>Статистика</button>
+    <button data-view="tips"><span>✦</span>Советы</button>
+  </nav>
+
+  <!-- Окно редактирования дня / периода -->
+  <dialog id="sheet">
+    <form method="dialog" id="sheetForm">
+      <div id="sheetBody"></div>
+    </form>
+  </dialog>
+
+  <script src="tips.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
