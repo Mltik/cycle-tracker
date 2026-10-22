@@ -22,14 +22,22 @@
     ["nausea", "Тошнота"], ["libido", "Повышенное либидо"]
   ];
   const FLOW = [["spotting", "Мажущие"], ["light", "Слабые"], ["medium", "Средние"], ["heavy", "Обильные"]];
-  const PAIN = [["0", "Нет"], ["1", "Слабая"], ["2", "Средняя"], ["3", "Сильная"]];
+  // Боль: шкала 0–10. Границы «слабая / умеренная / сильная» — по исследованию шкал боли (см. tips.js, id "pain-describe").
+  const painLevel = n => n == null ? "" : n === 0 ? "нет боли" : n <= 4 ? "слабая" : n <= 6 ? "умеренная" : "сильная";
+  const painClass = n => n == null || n === 0 ? "p0" : n <= 4 ? "p1" : n <= 6 ? "p2" : "p3";
+  const PAIN_PLACES = [["belly", "Низ живота"], ["back", "Поясница"], ["head", "Голова"], ["breasts", "Грудь"],
+    ["legs", "Ноги/бёдра"], ["side", "Бок (справа/слева)"], ["sex", "При близости"], ["toilet", "В туалете"], ["other", "Другое"]];
+  const PAIN_TYPES = [["cramping", "Схваткообразная/спазмы"], ["aching", "Ноющая"], ["sharp", "Острая/колющая"], ["pulling", "Тянущая"],
+    ["throbbing", "Пульсирующая"], ["burning", "Жгучая"], ["pressing", "Давящая"]];
+  const PAIN_HELP = [["yes", "Помогло"], ["partly", "Частично"], ["no", "Не помогло"]];
+  const PAIN_HINTS = ["Своими словами: ", "Началась: ", "Длится: ", "Усиливается, когда: ", "Помогает: ", "Мешает делам: ", "Похоже на прошлый раз? "];
   const MOOD = [["good", "😊 Хорошее"], ["ok", "😐 Ровное"], ["low", "😔 Подавленное"], ["irritable", "😠 Раздражённое"]];
   const ENERGY = [["high", "Много сил"], ["normal", "Обычно"], ["low", "Мало сил"]];
   const PHASES = {
     menstrual: "Месячные", follicular: "Фолликулярная фаза", fertile: "Фертильное окно",
     ovulation: "Овуляция (оценка)", luteal: "Лютеиновая фаза", unknown: "Нет данных"
   };
-  const LABEL = Object.fromEntries([...SYMPTOMS, ...FLOW, ...MOOD, ...ENERGY]);
+  const LABEL = Object.fromEntries([...SYMPTOMS, ...FLOW, ...MOOD, ...ENERGY, ...PAIN_PLACES, ...PAIN_TYPES, ...PAIN_HELP]);
 
   // ---------- Даты (строки YYYY-MM-DD, без часовых поясов) ----------
   const pad = n => String(n).padStart(2, "0");
@@ -47,13 +55,22 @@
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
   // ---------- Хранилище ----------
+  // старые записи боли (0–3) переводим в шкалу 0–10
+  function migrate(logs) {
+    const map = { "0": 0, "1": 3, "2": 5, "3": 8 };
+    for (const l of Object.values(logs || {})) {
+      if (l.pain != null && l.painScore == null && map[l.pain] != null) l.painScore = map[l.pain];
+      delete l.pain;
+    }
+    return logs || {};
+  }
   function load() {
     const empty = { periods: [], logs: {}, settings: { name: "", defaultCycle: 28, defaultPeriod: 5 } };
     try {
       const raw = localStorage.getItem(STORE_KEY);
       if (!raw) return empty;
       const data = JSON.parse(raw);
-      return { periods: data.periods || [], logs: data.logs || {}, settings: Object.assign(empty.settings, data.settings || {}) };
+      return { periods: data.periods || [], logs: migrate(data.logs), settings: Object.assign(empty.settings, data.settings || {}) };
     } catch (e) { return empty; }
   }
   let state = load();
@@ -181,9 +198,9 @@
     const spot = Object.entries(state.logs).filter(([d, l]) => l.flow && !periodSet.has(d)).map(([d]) => d).sort().slice(-5);
     if (spot.length) w.push(["alert", "Кровянистые выделения между месячными", `Отмечено: ${spot.map(human).join(", ")}. Кровотечение между месячными — повод показаться врачу.`, "doctor"]);
     // сильная боль
-    const severe = Object.entries(state.logs).filter(([, l]) => l.pain === "3").map(([d]) => d);
+    const severe = Object.entries(state.logs).filter(([, l]) => l.painScore >= 7).map(([d]) => d);
     const severeCycles = new Set(severe.map(d => { const p = a.periods.filter(p => p.start <= d).pop(); return p ? p.start : d; }));
-    if (severeCycles.size >= 2) w.push(["warn", "Повторяющаяся сильная боль", `Сильная боль отмечена в ${severeCycles.size} циклах. Если боль мешает обычной жизни, обсудите с врачом.`, "nsaid"]);
+    if (severeCycles.size >= 2) w.push(["warn", "Повторяющаяся сильная боль", `Боль 7 из 10 и сильнее отмечена в ${severeCycles.size} циклах. Если боль мешает обычной жизни, обсудите с врачом — покажите ему «Дневник боли» из вкладки «Статистика».`, "pain-describe"]);
     const heavy = Object.values(state.logs).filter(l => l.flow === "heavy").length;
     if (heavy >= 4) w.push(["info", "Часто отмечены обильные выделения", "Если обильные месячные мешают жить обычной жизнью, по руководству NICE это повод обратиться к врачу.", "heavy"]);
     return w;
@@ -266,12 +283,12 @@
     el.innerHTML = `
       <h2>${compact ? "Как сегодня?" : "Отметки за " + human(date)}</h2>
       ${chipGroup("Выделения", "flow", FLOW, false, "flow")}
-      ${chipGroup("Боль", "pain", PAIN, false)}
+      ${painBlock(log, chipGroup)}
       ${chipGroup("Настроение", "mood", MOOD, false)}
       ${chipGroup("Энергия", "energy", ENERGY, false)}
       ${chipGroup("Симптомы", "symptoms", SYMPTOMS, true)}
       <div class="group"><div class="group-title">Заметка</div>
-      <textarea data-note placeholder="Например: плохо спала, болит голова с утра">${esc(log.note || "")}</textarea></div>`;
+      <textarea data-text="note" placeholder="Например: плохо спала, много работы">${esc(log.note || "")}</textarea></div>`;
     el.querySelectorAll(".chip").forEach(btn => btn.onclick = () => {
       const l = Object.assign({}, state.logs[date] || {});
       const f = btn.dataset.field, v = btn.dataset.v;
@@ -281,13 +298,65 @@
       setLog(date, l);
       renderDayLog(el, date, compact);
     });
-    const ta = el.querySelector("textarea");
-    ta.onchange = () => { const l = Object.assign({}, state.logs[date] || {}); l.note = ta.value.trim() || undefined; setLog(date, l); };
+    // сила боли 0–10
+    el.querySelectorAll("[data-pscore]").forEach(btn => btn.onclick = () => {
+      const l = Object.assign({}, state.logs[date] || {});
+      const v = +btn.dataset.pscore;
+      l.painScore = l.painScore === v ? undefined : v;
+      setLog(date, l);
+      renderDayLog(el, date, compact);
+    });
+    // текстовые поля сохраняются по мере ввода, без перерисовки формы
+    el.querySelectorAll("[data-text]").forEach(inp => {
+      const put = () => {
+        const l = Object.assign({}, state.logs[date] || {});
+        l[inp.dataset.text] = inp.value.trim() ? inp.value : undefined;
+        return l;
+      };
+      inp.oninput = () => storeLog(date, put());     // сразу в память, без перерисовки
+      inp.onchange = () => setLog(date, put());      // при выходе из поля — обновить календарь и статистику
+    });
+    // подсказки к описанию боли: вставляют начало фразы
+    el.querySelectorAll("[data-hint]").forEach(btn => btn.onclick = () => {
+      const ta = el.querySelector('[data-text="painNote"]');
+      const prefix = ta.value && !ta.value.endsWith("\n") ? "\n" : "";
+      ta.value += prefix + btn.dataset.hint;
+      ta.focus();
+      ta.setSelectionRange(ta.value.length, ta.value.length);
+      ta.dispatchEvent(new Event("input"));
+    });
   }
-  function setLog(date, l) {
+
+  function painBlock(log, chipGroup) {
+    const s = log.painScore;
+    const scale = Array.from({ length: 11 }, (_, n) =>
+      `<button type="button" class="pscore ${painClass(n)} ${s === n ? "on" : ""}" data-pscore="${n}" aria-label="Боль ${n} из 10">${n}</button>`).join("");
+    const details = s > 0 ? `
+      <div class="pain-details">
+        ${chipGroup("Где болит", "painPlaces", PAIN_PLACES, true)}
+        ${chipGroup("Какая боль", "painTypes", PAIN_TYPES, true)}
+        <div class="group"><div class="group-title">Лекарство</div>
+          <input type="text" data-text="painMed" maxlength="80" placeholder="Например: ибупрофен 400 мг в 10:00" value="${esc(log.painMed || "")}">
+        </div>
+        ${chipGroup("Помогло?", "painHelp", PAIN_HELP, false)}
+        <div class="group"><div class="group-title">Опишите своими словами</div>
+          <div class="chips hints">${PAIN_HINTS.map(h => `<button type="button" class="chip hint" data-hint="${esc(h)}">${esc(h.replace(/[:?]\s*$/, ""))}</button>`).join("")}</div>
+          <textarea data-text="painNote" rows="4" placeholder="Как ощущается боль, когда началась, что помогает, мешает ли делам…">${esc(log.painNote || "")}</textarea>
+        </div>
+      </div>` : "";
+    return `<div class="group pain"><div class="group-title">Боль <span class="pain-val">${s == null ? "— не отмечено" : `${s}/10 · ${painLevel(s)}`}</span>
+      <a href="#" data-tip="pain-describe" class="small">как оценить?</a></div>
+      <div class="pscale">${scale}</div>
+      <div class="pscale-legend small muted"><span>0 нет</span><span>1–4 слабая</span><span>5–6 умеренная</span><span>7–10 сильная</span></div>
+      ${details}</div>`;
+  }
+  function storeLog(date, l) {
     Object.keys(l).forEach(k => (l[k] === undefined || (Array.isArray(l[k]) && !l[k].length)) && delete l[k]);
     if (Object.keys(l).length) state.logs[date] = l; else delete state.logs[date];
     try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { storageOk = false; }
+  }
+  function setLog(date, l) {
+    storeLog(date, l);
     renderCalendar(analyze()); // календарь и статистика обновятся, а открытая форма останется
     renderStats(analyze());
   }
@@ -449,6 +518,8 @@
       `<p class="muted small">«до мес.» — сколько раз отмечено в 7 дней перед началом месячных.</p>`
       : `<p class="muted small">Отмечайте симптомы на вкладке «Сегодня» — здесь появится, какие из них повторяются и когда.</p>`);
 
+    renderPainDiary(a);
+
     $("#periodList").innerHTML = a.periods.length ? [...a.periods].reverse().map((p, i, arr) => {
       const len = p.end ? diff(p.start, p.end) + 1 : null;
       const prev = arr[i + 1];
@@ -462,6 +533,71 @@
     $("#setName").value = state.settings.name || "";
     $("#setCycle").value = state.settings.defaultCycle;
     $("#setPeriod").value = state.settings.defaultPeriod;
+  }
+
+  // ---------- Дневник боли ----------
+  let painShowAll = false;
+  function painEntries(a) {
+    const rec = recordedPeriodDays();
+    return Object.entries(state.logs).filter(([, l]) => l.painScore > 0).sort((x, y) => y[0].localeCompare(x[0])).map(([d, l]) => {
+      const p = a.periods.filter(p => p.start <= d).pop();
+      return { date: d, log: l, cycleDay: p ? diff(p.start, d) + 1 : null, inPeriod: rec.has(d) };
+    });
+  }
+  function painLine(e) {
+    const l = e.log, parts = [];
+    if (l.painPlaces && l.painPlaces.length) parts.push("где: " + l.painPlaces.map(x => LABEL[x]).join(", ").toLowerCase());
+    if (l.painTypes && l.painTypes.length) parts.push("характер: " + l.painTypes.map(x => LABEL[x]).join(", ").toLowerCase());
+    if (l.painMed) parts.push("лекарство: " + l.painMed + (l.painHelp ? ` (${LABEL[l.painHelp].toLowerCase()})` : ""));
+    else if (l.painHelp) parts.push(LABEL[l.painHelp].toLowerCase());
+    return parts;
+  }
+  function renderPainDiary(a) {
+    const list = painEntries(a);
+    const el = $("#painDiary");
+    if (!list.length) {
+      el.innerHTML = `<h2>Дневник боли</h2><p class="muted small">Здесь будут все дни, когда отмечена боль: сила, где болит, какая, что помогло и описание своими словами. Отмечайте боль на вкладке «Сегодня» или в календаре.</p>`;
+      return;
+    }
+    const avg = arr => arr.length ? (arr.reduce((s, x) => s + x, 0) / arr.length).toFixed(1).replace(".", ",") : "—";
+    const inP = list.filter(e => e.inPeriod).map(e => e.log.painScore), outP = list.filter(e => !e.inPeriod).map(e => e.log.painScore);
+    const severe = list.filter(e => e.log.painScore >= 7).length;
+    const shown = painShowAll ? list : list.slice(0, 10);
+    el.innerHTML = `<div class="row between"><h2>Дневник боли</h2><button type="button" class="btn small" id="painCopy">Для врача</button></div>
+      <div class="stats-grid">
+        <div class="stat"><div class="v">${list.length}</div><div class="l">дней с болью</div></div>
+        <div class="stat"><div class="v">${severe}</div><div class="l">дней с сильной болью (7+)</div></div>
+        <div class="stat"><div class="v">${avg(inP)}</div><div class="l">средняя сила во время месячных</div></div>
+        <div class="stat"><div class="v">${avg(outP)}</div><div class="l">средняя сила в другие дни</div></div>
+      </div>
+      <ul class="pain-list">${shown.map(e => `
+        <li data-date="${e.date}">
+          <span class="pbadge ${painClass(e.log.painScore)}">${e.log.painScore}</span>
+          <div><div><b>${humanY(e.date)}</b> <span class="muted small">${e.cycleDay ? `${e.cycleDay}-й день цикла` : ""}${e.inPeriod ? " · месячные" : ""}</span></div>
+          ${painLine(e).map(t => `<div class="small">${esc(t)}</div>`).join("")}
+          ${e.log.painNote ? `<div class="pnote">${esc(e.log.painNote)}</div>` : ""}</div>
+        </li>`).join("")}</ul>
+      ${list.length > 10 ? `<button type="button" class="btn small" id="painMore">${painShowAll ? "Свернуть" : `Показать все (${list.length})`}</button>` : ""}
+      <p class="muted small">Нажмите на запись, чтобы изменить её. Кнопка «Для врача» копирует дневник текстом — его можно вставить в сообщение или распечатать.</p>`;
+    el.querySelectorAll("li[data-date]").forEach(li => li.onclick = () => openDaySheet(li.dataset.date));
+    const more = $("#painMore"); if (more) more.onclick = () => { painShowAll = !painShowAll; renderPainDiary(analyze()); };
+    $("#painCopy").onclick = () => copyPainReport(a, list);
+  }
+  function copyPainReport(a, list) {
+    const lines = [`Дневник боли${state.settings.name ? " — " + state.settings.name : ""}`, `Сформирован: ${humanY(a.today)}`];
+    if (a.avgCycle) lines.push(`Средняя длина цикла: ${Math.round(a.avgCycle)} дн., средняя длительность месячных: ${a.avgPeriod ? Math.round(a.avgPeriod) : "—"} дн.`);
+    lines.push("Шкала боли 0–10 (0 — нет, 1–4 слабая, 5–6 умеренная, 7–10 сильная)", "");
+    for (const e of [...list].reverse()) {
+      lines.push(`${humanY(e.date)}${e.cycleDay ? `, ${e.cycleDay}-й день цикла` : ""}${e.inPeriod ? ", месячные" : ""} — боль ${e.log.painScore}/10`);
+      painLine(e).forEach(t => lines.push("  " + t));
+      if (e.log.painNote) lines.push("  описание: " + e.log.painNote.replace(/\n+/g, " / "));
+    }
+    const text = lines.join("\n");
+    const fallback = () => openSheet(`<div class="row between"><h2>Дневник для врача</h2><button class="icon-btn" value="close" aria-label="Закрыть">×</button></div>
+      <p class="muted small">Выделите текст и скопируйте.</p><textarea rows="14" readonly>${esc(text)}</textarea>
+      <div class="sheet-actions"><button class="btn" value="close">Готово</button></div>`);
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => alert("Дневник скопирован. Вставьте его в сообщение врачу или в заметки."), fallback);
+    else fallback();
   }
 
   // ---------- Советы ----------
@@ -541,7 +677,7 @@
         if (!Array.isArray(d.periods)) throw new Error();
         if (!confirm(`Заменить текущие данные данными из файла (${d.periods.length} записей месячных)?`)) return;
         state = { periods: d.periods.filter(p => /^\d{4}-\d\d-\d\d$/.test(p.start)).map(p => ({ id: p.id || uid(), start: p.start, end: p.end || null })),
-          logs: d.logs || {}, settings: Object.assign({ name: "", defaultCycle: 28, defaultPeriod: 5 }, d.settings || {}) };
+          logs: migrate(d.logs), settings: Object.assign({ name: "", defaultCycle: 28, defaultPeriod: 5 }, d.settings || {}) };
         save(); alert("Данные восстановлены.");
       } catch (err) { alert("Файл не похож на копию данных этого приложения."); }
       e.target.value = "";
