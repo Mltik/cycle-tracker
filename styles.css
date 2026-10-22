@@ -17,6 +17,11 @@
   --alert-line: #d64545;
   --shadow: 0 1px 2px rgba(60, 30, 20, .06), 0 4px 14px rgba(60, 30, 20, .05);
   color-scheme: light;
+  /* цвета календаря */
+  --c-period-bg: #e0475b; --c-period-fg: #ffffff;
+  --c-pred-bg: #fde4e8; --c-pred-fg: #b4233a; --c-pred-border: #e0475b;
+  --c-fert-bg: #cfeee8; --c-fert-fg: #0f5d53; --c-fert-border: #6cc7b8;
+  --c-ov-bg: #0f7a6b; --c-ov-fg: #ffffff;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -25,6 +30,10 @@
     --fertile: #5cc8b8; --fertile-soft: #173b36; --ovulation: #8fe3d6;
     --warn-bg: #3a2f14; --warn-line: #b38a2a; --alert-bg: #3f1d1d; --alert-line: #e06666;
     --shadow: none; color-scheme: dark;
+    --c-period-bg: #ff5c73; --c-period-fg: #2a0a10;
+    --c-pred-bg: transparent; --c-pred-fg: #ff9aa8; --c-pred-border: #ff5c73;
+    --c-fert-bg: #1f6b62; --c-fert-fg: #d9fff9; --c-fert-border: #3cc4b1;
+    --c-ov-bg: #5eead4; --c-ov-fg: #062b26;
   }
   :root:not([data-theme="light"]) .btn.primary, :root:not([data-theme="light"]) .btn.accent { color: #1a0c08; }
 }
@@ -35,6 +44,10 @@
   --fertile: #5cc8b8; --fertile-soft: #173b36; --ovulation: #8fe3d6;
   --warn-bg: #3a2f14; --warn-line: #b38a2a; --alert-bg: #3f1d1d; --alert-line: #e06666;
   --shadow: none; color-scheme: dark;
+    --c-period-bg: #ff5c73; --c-period-fg: #2a0a10;
+    --c-pred-bg: transparent; --c-pred-fg: #ff9aa8; --c-pred-border: #ff5c73;
+    --c-fert-bg: #1f6b62; --c-fert-fg: #d9fff9; --c-fert-border: #3cc4b1;
+    --c-ov-bg: #5eead4; --c-ov-fg: #062b26;
 }
 
 * { box-sizing: border-box; }
@@ -82,11 +95,13 @@ main { max-width: 640px; margin: 0 auto; padding: 0 16px; }
 .ring .big { font-size: 34px; font-weight: 700; line-height: 1; }
 .hero-info { min-width: 0; }
 .phase-pill {
-  display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  border: 0; font-family: inherit; cursor: pointer; align-items: center; gap: 6px;
+  display: inline-flex; padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 600;
   background: var(--accent-soft); color: var(--accent); margin-bottom: 6px;
 }
-.phase-pill.menstrual { background: var(--period-soft); color: var(--period); }
-.phase-pill.fertile, .phase-pill.ovulation { background: var(--fertile-soft); color: var(--ovulation); }
+.phase-pill.menstrual { background: var(--c-period-bg); color: var(--c-period-fg); }
+.phase-pill.fertile { background: var(--c-fert-bg); color: var(--c-fert-fg); }
+.phase-pill.ovulation { background: var(--c-ov-bg); color: var(--c-ov-fg); }
 .hero-info .main { font-size: 18px; font-weight: 600; }
 
 .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -144,23 +159,33 @@ textarea { min-height: 70px; resize: vertical; }
 }
 .day.out { color: var(--muted); opacity: .45; }
 .day.today { outline: 2px solid var(--text); outline-offset: -2px; font-weight: 700; }
-.day.period { background: var(--period); color: #fff; }
-.day.predicted { background: var(--period-soft); color: var(--period); border: 1px dashed var(--period); }
-.day.fertile { background: var(--fertile-soft); color: var(--ovulation); }
-.day.ovulation { background: var(--fertile); color: #fff; }
+.day.period { background: var(--c-period-bg); color: var(--c-period-fg); font-weight: 600; }
+.day.predicted { background: var(--c-pred-bg); color: var(--c-pred-fg); border: 2px dashed var(--c-pred-border); }
+.day.fertile { background: var(--c-fert-bg); color: var(--c-fert-fg); border: 1px solid var(--c-fert-border); }
+.day.ovulation { background: var(--c-ov-bg); color: var(--c-ov-fg); font-weight: 700; }
 .day .dot {
   position: absolute; bottom: 4px; left: 50%; width: 5px; height: 5px; margin-left: -2.5px;
   border-radius: 50%; background: var(--accent);
 }
-.day.period .dot, .day.ovulation .dot { background: #fff; }
-.legend { display: flex; flex-wrap: wrap; gap: 10px 14px; margin-top: 12px; font-size: 12px; color: var(--muted); }
-.legend span { display: inline-flex; align-items: center; gap: 5px; }
-.sw { display: inline-block; width: 12px; height: 12px; border-radius: 4px; }
-.sw.period { background: var(--period); }
-.sw.predicted { background: var(--period-soft); border: 1px dashed var(--period); }
-.sw.fertile { background: var(--fertile-soft); }
-.sw.ovulation { background: var(--fertile); }
-.sw.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.day.period .dot, .day.ovulation .dot { background: currentColor; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; font-size: 14px; }
+.legend button, .legend-note {
+  display: inline-flex; align-items: center; gap: 7px; min-height: 38px; padding: 6px 10px;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--bg); color: var(--text); font: inherit; font-size: 14px; cursor: pointer;
+}
+.legend-note { border-style: dashed; cursor: default; color: var(--muted); }
+.legend b, .phase-pill b {
+  display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%;
+  font-size: 11px; background: var(--line); color: var(--text);
+}
+.legend-hint { margin: 8px 0 0; }
+.sw { display: inline-block; width: 18px; height: 18px; border-radius: 6px; flex: 0 0 auto; vertical-align: middle; }
+.sw.big { width: 22px; height: 22px; }
+.sw.period { background: var(--c-period-bg); }
+.sw.predicted { background: var(--c-pred-bg); border: 2px dashed var(--c-pred-border); }
+.sw.fertile { background: var(--c-fert-bg); border: 1px solid var(--c-fert-border); }
+.sw.ovulation { background: var(--c-ov-bg); }
+.sw.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
 
 /* Статистика */
 .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -219,3 +244,12 @@ dialog::backdrop { background: rgba(0, 0, 0, .45); }
   .hero { flex-direction: column; text-align: center; }
   .stats-grid { grid-template-columns: 1fr; }
 }
+
+/* Справочник */
+.gloss { border-top: 1px solid var(--line); padding: 4px 0; }
+.gloss:first-child { border-top: 0; }
+.gloss summary { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; font-weight: 600; list-style: none; }
+.gloss summary::-webkit-details-marker { display: none; }
+.gloss summary::after { content: "+"; margin-left: auto; color: var(--muted); font-size: 20px; }
+.gloss[open] summary::after { content: "−"; }
+.gloss p { margin: 4px 0 6px; }

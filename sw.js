@@ -1,5 +1,5 @@
 // Офлайн-режим: файлы приложения кэшируются, данные остаются в localStorage.
-const CACHE = "cycle-v1";
+const CACHE = "cycle-v2";
 const FILES = ["./", "index.html", "styles.css", "app.js", "tips.js", "manifest.webmanifest", "icon.svg", "icon-192.png", "icon-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener("activate", e => {

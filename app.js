@@ -198,7 +198,7 @@
   function renderToday(a) {
     const hero = $("#hero");
     const name = state.settings.name;
-    $("#appTitle").textContent = name ? `Цикл · ${name}` : "Цикл";
+    $("#appTitle").textContent = name ? `Cycle · ${name}` : "Cycle";
     if (!a.last) {
       hero.innerHTML = `<div class="hero-info"><span class="phase-pill">Начнём</span>
         <div class="main">Отметьте первый день последних месячных</div>
@@ -223,7 +223,7 @@
           <div class="center"><div class="big">${a.cycleDay}</div><div class="muted small">день цикла</div></div>
         </div>
         <div class="hero-info">
-          <span class="phase-pill ${phase}">${PHASES[phase]}</span>
+          <button type="button" class="phase-pill ${phase}" data-info="${phase === "menstrual" ? "period" : phase}">${PHASES[phase]} <b>?</b></button>
           <div class="main">${main}</div>
           <div class="muted small">${sub}</div>
           <div class="muted small">${a.ovulation && a.today <= a.ovulation ? `Овуляция ~${human(a.ovulation)} (оценка)` : ""}</div>
@@ -477,6 +477,21 @@
     const list = TIPS.filter(t => tipFilter === "all" || t.phase === tipFilter || (tipFilter === "any" && t.phase === "follicular"));
     $("#tipList").innerHTML = list.map(t => `<div class="card tip" id="tip-${t.id}">${tipHtml(t)}</div>`).join("");
   }
+  // Справочник
+  function glossaryHtml(g, open) {
+    return `<details class="gloss" id="gloss-${g.key}" ${open ? "open" : ""}><summary>${g.swatch ? `<i class="sw ${g.swatch}"></i>` : ""}${esc(g.title)}</summary>
+      <p>${esc(g.text)}</p><ul class="src">${g.sources.map(s => `<li><a href="${s.url}" target="_blank" rel="noopener">${esc(s.name)}</a></li>`).join("")}</ul></details>`;
+  }
+  function renderGlossary() { $("#glossary").innerHTML = GLOSSARY.map(g => glossaryHtml(g, false)).join(""); }
+  function showInfo(key) {
+    const g = GLOSSARY.find(x => x.key === key);
+    if (!g) return;
+    openSheet(`<div class="row between"><h2>${g.swatch ? `<i class="sw big ${g.swatch}"></i> ` : ""}${esc(g.title)}</h2><button class="icon-btn" value="close" aria-label="Закрыть">×</button></div>
+      <p>${esc(g.text)}</p><div class="lvl muted small">Источники:</div>
+      <ul class="src small">${g.sources.map(s => `<li><a href="${s.url}" target="_blank" rel="noopener">${esc(s.name)}</a></li>`).join("")}</ul>
+      <div class="sheet-actions"><button class="btn" value="close">Понятно</button></div>`);
+  }
+
   function showTip(id) {
     tipFilter = "all"; switchView("tips"); renderTips();
     const el = document.getElementById("tip-" + id);
@@ -503,7 +518,9 @@
   $("#sheet").addEventListener("close", () => render());
   document.addEventListener("click", e => {
     const t = e.target.closest("[data-tip]");
-    if (t) { e.preventDefault(); if (sheet().open) sheet().close(); showTip(t.dataset.tip); }
+    if (t) { e.preventDefault(); if (sheet().open) sheet().close(); showTip(t.dataset.tip); return; }
+    const info = e.target.closest("[data-info]");
+    if (info) { e.preventDefault(); showInfo(info.dataset.info); }
   });
 
   $("#setName").onchange = e => { state.settings.name = e.target.value.trim(); save(); };
@@ -536,6 +553,7 @@
     state = { periods: [], logs: {}, settings: state.settings }; save();
   };
 
+  renderGlossary();
   render();
   // обновить «сегодня», если приложение осталось открытым после полуночи
   let lastDay = todayIso();

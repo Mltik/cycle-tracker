@@ -163,3 +163,75 @@ window.TIPS = [
     sources: [{ name: "Bull et al., npj Digital Medicine, 2019", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC6710244/" }]
   }
 ];
+
+// Справочник: что означают фазы и отметки в календаре.
+// key совпадает с классами календаря (period, predicted, fertile, ovulation) и фазами (menstrual, follicular, luteal).
+window.GLOSSARY = [
+  {
+    key: "cycle",
+    title: "Что такое менструальный цикл",
+    text: "Цикл считается от первого дня месячных до дня перед следующими месячными. Он состоит из двух больших частей: до овуляции (фолликулярная фаза) и после неё (лютеиновая фаза). Месячные — начало фолликулярной фазы. В среднем цикл длится около 29 дней, но нормой считается 24–38 дней.",
+    sources: [
+      { name: "Cleveland Clinic: Follicular phase", url: "https://my.clevelandclinic.org/health/articles/23953-follicular-phase" },
+      { name: "Bull et al., npj Digital Medicine, 2019", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC6710244/" },
+      { name: "FIGO, Munro et al., 2018", url: "https://doi.org/10.1002/ijgo.12666" }
+    ]
+  },
+  {
+    key: "period",
+    swatch: "period",
+    title: "Месячные (менструация)",
+    text: "Если в прошлом цикле беременность не наступила, уровни эстрогена и прогестерона падают, и слизистая матки отторгается — это и есть кровотечение. Обычно длится 3–7 дней, нормой считается до 8 дней. В календаре — дни, которые вы отметили сами.",
+    sources: [
+      { name: "FIGO, Munro et al., 2018", url: "https://doi.org/10.1002/ijgo.12666" },
+      { name: "Cleveland Clinic: Follicular phase", url: "https://my.clevelandclinic.org/health/articles/23953-follicular-phase" }
+    ]
+  },
+  {
+    key: "predicted",
+    swatch: "predicted",
+    title: "Прогноз месячных",
+    text: "Пунктирные дни — когда месячные вероятно начнутся. Приложение берёт среднюю длину последних 6 циклов и прибавляет её к дате последних месячных. Чем больше записано циклов, тем точнее прогноз, но отклонение на несколько дней — нормально.",
+    sources: [{ name: "Bull et al., npj Digital Medicine, 2019", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC6710244/" }]
+  },
+  {
+    key: "follicular",
+    title: "Фолликулярная фаза",
+    text: "Начинается с первого дня месячных и длится до овуляции. Гипофиз выделяет гормон ФСГ, в яичнике растут фолликулы (пузырьки с яйцеклетками), один из них становится главным. Растёт эстроген, слизистая матки утолщается. Именно эта фаза сильнее всего различается по длине — поэтому циклы бывают разными.",
+    sources: [
+      { name: "Cleveland Clinic: Follicular phase", url: "https://my.clevelandclinic.org/health/articles/23953-follicular-phase" },
+      { name: "Bull et al., 2019 — в среднем 16,9 дня", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC6710244/" }
+    ]
+  },
+  {
+    key: "fertile",
+    swatch: "fertile",
+    title: "Фертильное окно",
+    text: "Дни, когда близость может привести к беременности: примерно 5 дней до овуляции и день овуляции — всего около 6 дней. Почему так: сперматозоиды могут жить в организме женщины несколько дней, а яйцеклетка после выхода живёт лишь 12–24 часа. Шанс зачатия растёт к овуляции: около 10% за 5 дней до неё и около 33% в день овуляции. В календаре окно — оценка по средней длине цикла, а не точное знание. Это НЕ метод контрацепции.",
+    sources: [
+      { name: "Wilcox, Weinberg, Baird, NEJM, 1995", url: "https://www.nejm.org/doi/full/10.1056/NEJM199512073332301" },
+      { name: "Cleveland Clinic: Ovulation", url: "https://my.clevelandclinic.org/health/articles/23439-ovulation" },
+      { name: "Wilcox et al., BMJ, 2000 — окно трудно предсказать", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC27529" }
+    ]
+  },
+  {
+    key: "ovulation",
+    swatch: "ovulation",
+    title: "Овуляция",
+    text: "Выход зрелой яйцеклетки из фолликула. Её запускает резкий подъём лютеинизирующего гормона (ЛГ). Приложение оценивает день овуляции как «14 дней до следующих месячных»: месячные обычно приходят через 14–16 дней после овуляции. Точнее определить её можно тестами на ЛГ (продаются в аптеке) или измерением базальной температуры.",
+    sources: [
+      { name: "Cleveland Clinic: Ovulation", url: "https://my.clevelandclinic.org/health/articles/23439-ovulation" },
+      { name: "Bull et al., 2019 — значение тестов ЛГ и температуры", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC6710244/" }
+    ]
+  },
+  {
+    key: "luteal",
+    title: "Лютеиновая фаза",
+    text: "От овуляции до следующих месячных. Опустевший фолликул превращается в «жёлтое тело», которое вырабатывает прогестерон — он готовит матку к возможной беременности. Если беременность не наступила, жёлтое тело распадается, гормоны падают — и начинаются месячные. В этой фазе могут появляться симптомы ПМС. Длится в среднем 12–14 дней.",
+    sources: [
+      { name: "Bull et al., 2019 — в среднем 12,4 дня", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC6710244/" },
+      { name: "Cleveland Clinic: Ovulation", url: "https://my.clevelandclinic.org/health/articles/23439-ovulation" },
+      { name: "ACOG Clinical Practice Guideline No. 7 (ПМС)", url: "https://doi.org/10.1097/AOG.0000000000005426" }
+    ]
+  }
+];

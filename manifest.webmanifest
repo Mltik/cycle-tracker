@@ -1,6 +1,6 @@
 {
-  "name": "Цикл — дневник",
-  "short_name": "Цикл",
+  "name": "Cycle — дневник цикла",
+  "short_name": "Cycle",
   "description": "Дневник менструального цикла с научными подсказками",
   "lang": "ru",
   "start_url": "./",
